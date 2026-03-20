@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Loan Risk &amp; Recovery System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { "headline": ["Manrope","sans-serif"], "body": ["Inter","sans-serif"] }
+      }
+    }
+  }
+</script>
+<style>
+  .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+  body { background:#f7f9fb; font-family:'Inter',sans-serif; }
+  .nav-active  { background:rgba(0,20,83,.08); color:#001453; font-weight:700; border-right:3px solid #001453; }
+  .nav-inactive{ color:#64748b; }
+  .nav-inactive:hover { background:rgba(0,0,0,.04); color:#1e3a8a; }
+  .page { display:none; }
+  .page.active { display:block; }
+  .drop-zone { border:2px dashed #cbd5e1; border-radius:12px; transition:all .2s; }
+  .drop-zone.dragover { border-color:#001453; background:rgba(0,20,83,.04); }
+  @media print { aside,header,.no-print{display:none!important} }
+</style>
+</head>
+<body class="flex min-h-screen" style="color:#191c1e;">
+
+<!-- SIDEBAR -->
+<aside class="flex flex-col h-screen sticky top-0 w-64 bg-slate-50 border-r border-slate-200 flex-shrink-0">
+  <div class="p-6 border-b border-slate-200">
+    <h1 class="font-headline font-extrabold tracking-tight text-xl" style="color:#001453;">Sovereign Analyst</h1>
+    <p class="text-xs text-slate-500 mt-1">Institutional Risk AI</p>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+    <a class="nav-link nav-active flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="dashboard">
+      <span class="material-symbols-outlined text-xl">dashboard</span>
+      <span class="font-headline text-base">Dashboard</span>
+    </a>
+    <a class="nav-link nav-inactive flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="bulk">
+      <span class="material-symbols-outlined text-xl">upload_file</span>
+      <span class="font-headline text-base">Bulk Upload</span>
+    </a>
+    <a class="nav-link nav-inactive flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="risk">
+      <span class="material-symbols-outlined text-xl">security</span>
+      <span class="font-headline text-base">Risk Analysis</span>
+    </a>
+    <a class="nav-link nav-inactive flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="recovery">
+      <span class="material-symbols-outlined text-xl">rebase_edit</span>
+      <span class="font-headline text-base">Recovery Pipeline</span>
+    </a>
+    <a class="nav-link nav-inactive flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="portfolio">
+      <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+      <span class="font-headline text-base">Loan Portfolio</span>
+    </a>
+    <a class="nav-link nav-inactive flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all" data-page="reports">
+      <span class="material-symbols-outlined text-xl">analytics</span>
+      <span class="font-headline text-base">Reports</span>
+    </a>
+  </nav>
+  <div class="p-4 border-t border-slate-200">
+    <div class="flex items-center gap-3 p-2">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm" style="background:#001453;">SA</div>
+      <div><p class="text-sm font-bold">Sovereign Analyst</p><p class="text-xs text-slate-500">Portfolio Manager</p></div>
+    </div>
+    <div class="mt-3 space-y-1">
+      <a id="settings-sidebar-btn" class="flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 text-sm hover:bg-slate-100 cursor-pointer transition-all">
+        <span class="material-symbols-outlined text-sm">settings</span><span>Settings</span>
+      </a>
+      <a id="support-sidebar-btn" class="flex items-center gap-3 px-4 py-2 rounded-lg text-slate-500 text-sm hover:bg-slate-100 cursor-pointer transition-all">
+        <span class="material-symbols-outlined text-sm">help</span><span>Support</span>
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+
+  <!-- TOP NAV -->
+  <header class="flex items-center justify-between px-8 h-16 sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="flex items-center gap-6">
+      <h2 class="font-headline font-black text-lg" style="color:#001453;">Risk Intelligence Terminal</h2>
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-sm">search</span>
+        <input class="pl-9 pr-4 py-1.5 rounded-full bg-slate-100 text-sm border-none focus:outline-none focus:ring-2 focus:ring-blue-300 w-52" placeholder="Search Risk IDs..." type="text"/>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <nav class="flex gap-5 font-headline font-semibold text-sm">
+        <a class="py-5 cursor-pointer border-b-2 border-blue-900" style="color:#001453;">Global View</a>
+        <a class="py-5 cursor-pointer text-slate-400 hover:text-blue-700">Market Trends</a>
+      </nav>
+      <div class="flex gap-4 text-slate-500 items-center">
+        <div class="relative">
+          <span id="notif-btn" class="material-symbols-outlined cursor-pointer hover:text-blue-900 transition-colors select-none">notifications</span>
+          <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">0</span>
+        </div>
+        <span id="history-btn" class="material-symbols-outlined cursor-pointer hover:text-blue-900 transition-colors select-none">history</span>
+        <span id="account-btn" class="material-symbols-outlined cursor-pointer hover:text-blue-900 transition-colors select-none">account_circle</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE: DASHBOARD -->
+  <div id="page-dashboard" class="page active p-8 max-w-7xl mx-auto w-full space-y-8">
+    <section class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div>
+        <h1 class="font-headline text-4xl font-extrabold tracking-tight" style="color:#001453;">AI Loan Risk &amp; Recovery System</h1>
+        <p class="text-slate-500 mt-2 max-w-xl text-sm leading-relaxed">A predictive intelligence platform for sovereign-grade credit assessments. Input portfolio data to generate immediate risk vectors and recovery strategies.</p>
+      </div>
+      <!-- FIXED BUTTON -->
+      <button id="new-assessment-btn" class="no-print flex items-center gap-2 px-6 py-3 rounded-xl font-headline font-bold text-sm transition-all active:scale-95 shadow-lg hover:opacity-90" style="background:#001453;color:#fff;">
+        <span class="material-symbols-outlined">add</span> New Risk Assessment
+      </button>
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- INPUT FORM -->
+      <div class="lg:col-span-5">
+        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-100 space-y-5">
+          <h3 class="font-headline font-bold text-lg flex items-center gap-2" style="color:#001453;">
+            <span class="material-symbols-outlined">fact_check</span> Assessment Parameters
+          </h3>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Monthly Income</label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+              <input id="income" class="w-full pl-8 pr-4 py-3 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" type="number"/>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Monthly Expenses</label>
+            <input id="expenses" class="w-full px-4 py-3 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" type="number"/>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Current EMI</label>
+              <input id="emi" class="w-full px-4 py-3 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" type="number"/>
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Account Balance</label>
+              <input id="balance" class="w-full px-4 py-3 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="0.00" type="number"/>
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Missed Payments</label>
+            <select id="missed_payments" class="w-full px-4 py-3 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300">
+              <option value="0">0 — Perfect History</option>
+              <option value="1">1–2 — Minor Delinquency</option>
+              <option value="3">3–5 — Significant Risk</option>
+              <option value="5">5+ — Critical Failure</option>
+            </select>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Language Preference</label>
+            <div class="flex flex-wrap gap-2" id="lang-buttons">
+              <button class="lang-btn px-4 py-2 rounded-lg text-xs font-bold transition-all" style="background:#001453;color:#fff;" data-lang="English" type="button">English</button>
+              <button class="lang-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-slate-200 text-slate-600" data-lang="Tamil" type="button">Tamil</button>
+              <button class="lang-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-slate-200 text-slate-600" data-lang="Hindi" type="button">Hindi</button>
+              <button class="lang-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-slate-200 text-slate-600" data-lang="Malayalam" type="button">Malayalam</button>
+            </div>
+          </div>
+          <!-- FIXED BUTTON -->
+          <button id="analyze-btn" class="w-full py-4 rounded-xl font-headline font-extrabold text-lg flex items-center justify-center gap-3 shadow-lg transition-all active:scale-95 hover:opacity-90" style="background:#001453;color:#fff;" type="button">
+            <span class="material-symbols-outlined">analytics</span> Analyze Risk
+          </button>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div id="risk-card" class="bg-white p-6 rounded-xl border-l-8 shadow-sm flex flex-col justify-between" style="border-color:#cbd5e1;">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Risk Score</span>
+            <div class="flex items-baseline gap-2 mt-2">
+              <span id="risk-score" class="text-5xl font-headline font-black" style="color:#94a3b8;">--</span>
+              <span id="risk-level-badge" class="text-sm font-bold" style="color:#94a3b8;">Awaiting</span>
+            </div>
+            <div class="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div id="risk-bar" class="h-full rounded-full transition-all duration-700" style="width:0%;background:#94a3b8;"></div>
+            </div>
+          </div>
+          <div class="p-6 rounded-xl shadow-xl flex flex-col justify-between text-white overflow-hidden relative" style="background:#001453;">
+            <span class="text-xs font-bold text-blue-300 uppercase tracking-widest z-10 relative">Simulation Result</span>
+            <div class="mt-4 relative z-10">
+              <p class="text-sm text-blue-200 opacity-80">With Restructuring:</p>
+              <div class="flex items-center gap-4 mt-1">
+                <span id="sim-before" class="text-2xl font-headline font-bold line-through opacity-40">--</span>
+                <span class="material-symbols-outlined" style="color:#4edea3;">trending_down</span>
+                <span id="sim-after" class="text-3xl font-headline font-extrabold" style="color:#4edea3;">--</span>
+              </div>
+            </div>
+            <div class="mt-4 relative z-10">
+              <span class="px-2 py-1 rounded text-[10px] font-bold" style="background:rgba(255,255,255,.1);">Optimization: Active</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-8 rounded-xl space-y-6 border border-slate-100">
+          <div>
+            <h3 class="font-headline font-bold text-lg mb-4">Risk Vectors Identified</h3>
+            <ul id="reasons-list" class="space-y-3">
+              <li class="flex items-center gap-3 text-slate-400 italic text-sm">
+                <span class="material-symbols-outlined">info</span> Submit the form to see risk analysis.
+              </li>
+            </ul>
+          </div>
+          <div class="pt-5 border-t border-slate-200">
+            <h3 class="font-headline font-bold text-lg mb-3">Sovereign Recommendation</h3>
+            <div class="bg-white p-5 rounded-lg border border-slate-100 shadow-sm">
+              <p id="action-text" class="leading-relaxed italic text-sm text-slate-600">"Awaiting analysis..."</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h3 class="font-headline font-bold text-lg flex items-center gap-2">
+            <span class="material-symbols-outlined" style="color:#009668;">chat</span> Automated Recovery Message
+          </h3>
+          <div class="bg-white p-5 rounded-2xl rounded-tl-none shadow-sm max-w-lg">
+            <p id="recovery-message" class="text-sm leading-relaxed text-slate-700">Awaiting analysis...</p>
+            <span id="message-time" class="text-[10px] text-slate-400 mt-2 block text-right">--:--</span>
+          </div>
+          <div class="flex gap-2 flex-wrap no-print">
+            <button id="copy-msg-btn" class="px-4 py-2 rounded-full text-white text-xs font-bold flex items-center gap-2 hover:opacity-80 transition-all" style="background:#009668;">
+              <span class="material-symbols-outlined text-sm">content_copy</span> Copy
+            </button>
+            <button id="whatsapp-btn" class="px-4 py-2 rounded-full text-white text-xs font-bold flex items-center gap-2 hover:opacity-80 transition-all" style="background:#25D366;">
+              <span class="material-symbols-outlined text-sm">send</span> WhatsApp
+            </button>
+            <button id="export-single-pdf-btn" class="px-4 py-2 rounded-full border border-slate-300 text-slate-600 text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
+              <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: BULK UPLOAD -->
+  <div id="page-bulk" class="page p-8 max-w-6xl mx-auto w-full space-y-8">
+    <div>
+      <h1 class="font-headline text-3xl font-extrabold" style="color:#001453;">Bulk CSV / Excel Upload</h1>
+      <p class="text-slate-500 mt-1 text-sm">Upload a file with multiple customers. All rows are analyzed automatically.</p>
+    </div>
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <p class="font-bold text-blue-900 text-sm">📋 Download the template first</p>
+        <p class="text-blue-700 text-xs mt-1">Required columns: <code class="bg-blue-100 px-1 rounded font-mono">name, income, expenses, emi, balance, missed_payments, language</code></p>
+      </div>
+      <button id="download-template-btn" class="px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all" style="background:#001453;color:#fff;">
+        <span class="material-symbols-outlined text-sm">download</span> Download Template
+      </button>
+    </div>
+    <div id="drop-zone" class="drop-zone p-12 text-center cursor-pointer bg-white rounded-xl">
+      <span class="material-symbols-outlined text-5xl text-slate-300">upload_file</span>
+      <p class="font-headline font-bold text-slate-600 mt-3">Drag &amp; drop your CSV or Excel file here</p>
+      <p class="text-slate-400 text-sm mt-1">or</p>
+      <label class="mt-3 inline-block px-6 py-2 rounded-lg font-bold text-sm cursor-pointer hover:opacity-90 transition-all" style="background:#001453;color:#fff;">
+        Browse File <input id="csv-file-input" type="file" accept=".csv,.xlsx,.xls" class="hidden"/>
+      </label>
+      <p id="file-name-display" class="text-xs text-slate-400 mt-3">No file selected</p>
+    </div>
+    <div id="bulk-progress" class="hidden bg-white rounded-xl p-6 border border-slate-100 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <p class="font-bold text-slate-700 text-sm" id="bulk-progress-text">Processing...</p>
+        <span id="bulk-spinner" class="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style="border-color:#001453;border-top-color:transparent;"></span>
+      </div>
+      <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div id="bulk-progress-bar" class="h-full rounded-full transition-all duration-300" style="width:0%;background:#001453;"></div>
+      </div>
+    </div>
+    <div id="bulk-results-wrapper" class="hidden bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+        <h3 class="font-headline font-bold text-lg">Bulk Analysis Results</h3>
+        <div class="flex gap-2 no-print flex-wrap">
+          <!-- Filter tabs -->
+          <div class="flex rounded-lg overflow-hidden border border-slate-200 text-xs font-bold">
+            <button class="bulk-filter-btn px-3 py-2 transition-all" data-filter="all" style="background:#001453;color:#fff;">All</button>
+            <button class="bulk-filter-btn px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-all border-l border-slate-200" data-filter="High">🔴 High</button>
+            <button class="bulk-filter-btn px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-all border-l border-slate-200" data-filter="Medium">🟡 Medium</button>
+            <button class="bulk-filter-btn px-3 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-all border-l border-slate-200" data-filter="Low">🟢 Low</button>
+          </div>
+          <!-- Search -->
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-sm">search</span>
+            <input id="bulk-search" type="text" placeholder="Search name..." class="pl-8 pr-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 w-36"/>
+          </div>
+          <button id="export-bulk-excel-btn" class="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-all" style="background:#001453;color:#fff;">
+            <span class="material-symbols-outlined text-sm">table_view</span> Excel
+          </button>
+          <button id="export-bulk-pdf-btn" class="px-4 py-2 rounded-lg text-sm font-bold border border-slate-300 text-slate-700 flex items-center gap-2 hover:bg-slate-50 transition-all">
+            <span class="material-symbols-outlined text-sm">picture_as_pdf</span> PDF
+          </button>
+        </div>
+      </div>
+      <div id="bulk-summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-slate-50 border-b border-slate-100"></div>
+      <!-- Result count -->
+      <div class="px-5 py-2 bg-white border-b border-slate-100 flex items-center justify-between">
+        <p id="bulk-result-count" class="text-xs text-slate-500"></p>
+        <p class="text-xs text-slate-400">Click column headers to sort</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">#</th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="name">Name <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="income">Income <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="expenses">Expenses <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="emi">EMI <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="balance">Balance <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="missed_payments">Missed <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="risk_score">Score <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="bulk-sort-th py-3 px-4 text-xs font-bold text-slate-500 uppercase cursor-pointer hover:text-blue-900 hover:bg-slate-100 select-none transition-all" data-col="risk_level">Level <span class="sort-icon text-slate-300">↕</span></th>
+              <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Action</th>
+            </tr>
+          </thead>
+          <tbody id="bulk-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: RISK ANALYSIS -->
+  <div id="page-risk" class="page p-8 max-w-7xl mx-auto w-full space-y-8">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="font-headline text-3xl font-extrabold" style="color:#001453;">Risk Analysis Log</h1>
+        <p class="text-slate-500 text-sm mt-1">All assessments run this session.</p>
+      </div>
+      <button id="export-log-btn" class="no-print px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all" style="background:#001453;color:#fff;">
+        <span class="material-symbols-outlined text-sm">table_view</span> Export Excel
+      </button>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm overflow-x-auto border border-slate-100">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">ID</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Name</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Income</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Expenses</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">EMI</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Balance</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Missed</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Score</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Level</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Action</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Time</th>
+          </tr>
+        </thead>
+        <tbody id="risk-table-body">
+          <tr><td colspan="11" class="py-10 text-center text-slate-400 text-sm">No analyses yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAGE: RECOVERY PIPELINE -->
+  <div id="page-recovery" class="page p-8 max-w-7xl mx-auto w-full space-y-8">
+    <h1 class="font-headline text-3xl font-extrabold" style="color:#001453;">Recovery Pipeline</h1>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-red-500">
+        <p class="text-xs font-bold text-red-600 uppercase tracking-wider">High Risk</p>
+        <p class="text-4xl font-black text-red-600 mt-2" id="pipeline-high">0</p>
+        <p class="text-sm text-slate-500 mt-2">Requires EMI restructuring</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-amber-400">
+        <p class="text-xs font-bold text-amber-600 uppercase tracking-wider">Medium Risk</p>
+        <p class="text-4xl font-black text-amber-500 mt-2" id="pipeline-medium">0</p>
+        <p class="text-sm text-slate-500 mt-2">Payment reminders sent</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border-t-4 border-green-500">
+        <p class="text-xs font-bold text-green-600 uppercase tracking-wider">Low Risk</p>
+        <p class="text-4xl font-black text-green-600 mt-2" id="pipeline-low">0</p>
+        <p class="text-sm text-slate-500 mt-2">No action needed</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+      <h3 class="font-bold text-lg mb-4">Recent Actions</h3>
+      <div id="pipeline-actions" class="space-y-3">
+        <p class="text-slate-400 text-sm">No actions yet. Run analyses to populate the pipeline.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: LOAN PORTFOLIO -->
+  <div id="page-portfolio" class="page p-8 max-w-7xl mx-auto w-full space-y-8">
+    <h1 class="font-headline text-3xl font-extrabold" style="color:#001453;">Loan Portfolio</h1>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Assessed</p>
+        <p class="text-4xl font-black mt-2" style="color:#001453;" id="port-total">0</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg Risk Score</p>
+        <p class="text-4xl font-black mt-2" style="color:#001453;" id="port-avg">0%</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">High Risk</p>
+        <p class="text-4xl font-black text-red-600 mt-2" id="port-high">0</p>
+      </div>
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Healthy Profiles</p>
+        <p class="text-4xl font-black text-green-600 mt-2" id="port-low">0</p>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+      <h3 class="font-bold text-lg mb-4">Risk Distribution</h3>
+      <div class="h-6 rounded-full overflow-hidden flex bg-slate-100">
+        <div id="dist-high" class="h-full bg-red-500 transition-all duration-700" style="width:0%"></div>
+        <div id="dist-med"  class="h-full bg-amber-400 transition-all duration-700" style="width:0%"></div>
+        <div id="dist-low"  class="h-full bg-green-500 transition-all duration-700" style="width:0%"></div>
+      </div>
+      <div class="flex gap-6 mt-3 text-xs font-bold text-slate-500">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>High (<span id="pct-high">0%</span>)</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>Medium (<span id="pct-med">0%</span>)</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span>Low (<span id="pct-low">0%</span>)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: REPORTS -->
+  <div id="page-reports" class="page p-8 max-w-5xl mx-auto w-full space-y-8">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="font-headline text-3xl font-extrabold" style="color:#001453;">Reports</h1>
+        <p class="text-slate-500 text-sm mt-1">Export session data in multiple formats.</p>
+      </div>
+      <div class="flex gap-3 flex-wrap no-print">
+        <button id="export-excel-btn" class="px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-all" style="background:#001453;color:#fff;">
+          <span class="material-symbols-outlined text-sm">table_view</span> Excel
+        </button>
+        <button id="export-pdf-btn" class="px-5 py-2 rounded-lg font-bold text-sm border border-slate-300 text-slate-700 flex items-center gap-2 hover:bg-slate-50 transition-all">
+          <span class="material-symbols-outlined text-sm">picture_as_pdf</span> PDF
+        </button>
+        <button id="export-json-btn" class="px-5 py-2 rounded-lg font-bold text-sm border border-slate-300 text-slate-700 flex items-center gap-2 hover:bg-slate-50 transition-all">
+          <span class="material-symbols-outlined text-sm">data_object</span> JSON
+        </button>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+      <h3 class="font-bold text-lg mb-4 border-b pb-3">Session Summary</h3>
+      <div id="report-summary" class="text-slate-400 text-sm">No data yet. Run analyses to generate a report.</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm overflow-x-auto border border-slate-100">
+      <div class="p-5 border-b border-slate-100 font-bold text-sm">Full Assessment Log</div>
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Name/ID</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Income</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">EMI</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Score</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Level</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Action</th>
+            <th class="py-3 px-4 text-xs font-bold text-slate-500 uppercase">Sim After</th>
+          </tr>
+        </thead>
+        <tbody id="report-table-body">
+          <tr><td colspan="7" class="py-10 text-center text-slate-400 text-sm">No data yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- NOTIFICATIONS PANEL -->
+<div id="notif-panel" class="hidden fixed top-16 right-48 z-[150] w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+    <h3 class="font-headline font-bold text-base" style="color:#001453;">Notifications</h3>
+    <div class="flex gap-3">
+      <button id="mark-all-read-btn" class="text-xs font-bold text-blue-700 hover:underline">Mark all read</button>
+      <button id="clear-notifs-btn" class="text-xs font-bold text-slate-400 hover:text-red-500">Clear all</button>
+    </div>
+  </div>
+  <div id="notif-list" class="overflow-y-auto max-h-80 p-2 space-y-1">
+    <p class="text-slate-400 text-sm text-center py-6">No notifications yet.</p>
+  </div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div id="history-panel" class="hidden fixed top-16 right-32 z-[150] w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+    <h3 class="font-headline font-bold text-base" style="color:#001453;">Recent Analyses</h3>
+    <span class="text-xs text-slate-400">Last 20 entries</span>
+  </div>
+  <div id="history-list" class="overflow-y-auto max-h-80 p-2">
+    <p class="text-slate-400 text-sm text-center py-6">No analyses yet.</p>
+  </div>
+</div>
+
+<!-- ACCOUNT DROPDOWN -->
+<div id="account-panel" class="hidden fixed top-16 right-4 z-[150] w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+  <div class="px-5 py-5 border-b border-slate-100" style="background:linear-gradient(135deg,#001453,#1e3a8a);">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-full flex items-center justify-center font-black text-lg text-white" style="background:rgba(255,255,255,.15);">SA</div>
+      <div>
+        <p class="font-bold text-white text-sm">Sovereign Analyst</p>
+        <p class="text-blue-300 text-xs">Portfolio Manager</p>
+        <p class="text-blue-200 text-xs mt-0.5">sa@sovereignbank.com</p>
+      </div>
+    </div>
+  </div>
+  <div class="p-2 space-y-1">
+    <div class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-all">
+      <span class="material-symbols-outlined text-sm text-slate-500">person</span>
+      <div><p class="text-sm font-semibold text-slate-700">My Profile</p><p class="text-xs text-slate-400">View &amp; edit account details</p></div>
+    </div>
+    <button id="acc-export-btn" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-all text-left">
+      <span class="material-symbols-outlined text-sm text-slate-500">download</span>
+      <div><p class="text-sm font-semibold text-slate-700">Export My Session</p><p class="text-xs text-slate-400">Download all analyses as Excel</p></div>
+    </button>
+    <button id="settings-account-btn" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-all text-left">
+      <span class="material-symbols-outlined text-sm text-slate-500">settings</span>
+      <div><p class="text-sm font-semibold text-slate-700">Settings</p><p class="text-xs text-slate-400">Preferences &amp; configuration</p></div>
+    </button>
+    <div class="border-t border-slate-100 mt-1 pt-1">
+      <button id="acc-logout-btn" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 cursor-pointer transition-all text-left">
+        <span class="material-symbols-outlined text-sm text-red-500">logout</span>
+        <p class="text-sm font-semibold text-red-600">Sign Out</p>
+      </button>
+    </div>
+  </div>
+  <div class="px-5 py-3 border-t border-slate-100 bg-slate-50">
+    <p class="text-xs text-slate-400">Sovereign Analyst v1.0 · Session active</p>
+  </div>
+</div>
+
+<!-- FIXED FAB -->
+<button id="fab-btn" class="no-print fixed bottom-8 right-8 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-90 transition-all z-50" style="background:#001453;" title="Support">
+  <span class="material-symbols-outlined">support_agent</span>
+</button>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="hidden fixed inset-0 bg-black/40 z-[200] flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-8 py-5 border-b border-slate-100" style="background:linear-gradient(135deg,#001453,#1e3a8a);">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-white text-2xl">settings</span>
+        <div>
+          <h3 class="font-headline font-bold text-xl text-white">Settings</h3>
+          <p class="text-blue-300 text-xs">Preferences &amp; Configuration</p>
+        </div>
+      </div>
+      <button id="close-settings" class="text-blue-300 hover:text-white transition-colors"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <!-- Tab nav -->
+    <div class="flex border-b border-slate-100 bg-slate-50">
+      <button class="settings-tab-btn px-6 py-3 text-sm font-bold border-b-2 border-blue-900 transition-all" style="color:#001453;" data-tab="profile">Profile</button>
+      <button class="settings-tab-btn px-6 py-3 text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-blue-900 transition-all" data-tab="appearance">Appearance</button>
+      <button class="settings-tab-btn px-6 py-3 text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-blue-900 transition-all" data-tab="notifications">Notifications</button>
+      <button class="settings-tab-btn px-6 py-3 text-sm font-medium text-slate-500 border-b-2 border-transparent hover:text-blue-900 transition-all" data-tab="system">System</button>
+    </div>
+    <!-- Tab content -->
+    <div class="overflow-y-auto flex-1 p-8 space-y-6">
+
+      <!-- PROFILE TAB -->
+      <div id="settings-tab-profile" class="settings-tab space-y-5">
+        <h4 class="font-headline font-bold text-base" style="color:#001453;">User Profile</h4>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Full Name</label>
+            <input id="s-name" type="text" value="Sovereign Analyst" class="w-full px-4 py-2.5 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Role / Designation</label>
+            <input id="s-role" type="text" value="Portfolio Manager" class="w-full px-4 py-2.5 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Email Address</label>
+            <input id="s-email" type="email" value="sa@sovereignbank.com" class="w-full px-4 py-2.5 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"/>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Branch / Department</label>
+            <input id="s-branch" type="text" value="Risk Management — HQ" class="w-full px-4 py-2.5 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"/>
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider block">Bank / Institution Name</label>
+          <input id="s-bank" type="text" value="Sovereign National Bank" class="w-full px-4 py-2.5 rounded-lg bg-slate-100 border-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"/>
+        </div>
+      </div>
+
+      <!-- APPEARANCE TAB -->
+      <div id="settings-tab-appearance" class="settings-tab hidden space-y-5">
+        <h4 class="font-headline font-bold text-base" style="color:#001453;">Appearance</h4>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Currency Symbol</p>
+              <p class="text-xs text-slate-500 mt-0.5">Shown next to monetary values</p>
+            </div>
+            <select id="s-currency" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-300">
+              <option value="₹" selected>₹ Indian Rupee</option>
+              <option value="$">$ US Dollar</option>
+              <option value="€">€ Euro</option>
+              <option value="£">£ Pound</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Default Language</p>
+              <p class="text-xs text-slate-500 mt-0.5">Pre-selected in the analysis form</p>
+            </div>
+            <select id="s-lang" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-300">
+              <option value="English" selected>English</option>
+              <option value="Tamil">Tamil</option>
+              <option value="Hindi">Hindi</option>
+              <option value="Malayalam">Malayalam</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Rows per Bulk Page</p>
+              <p class="text-xs text-slate-500 mt-0.5">Max visible rows before scrolling</p>
+            </div>
+            <select id="s-rows" class="px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-300">
+              <option value="25">25 rows</option>
+              <option value="50" selected>50 rows</option>
+              <option value="100">100 rows</option>
+              <option value="all">All rows</option>
+            </select>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Compact Table Mode</p>
+              <p class="text-xs text-slate-500 mt-0.5">Reduce row padding to show more data</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="s-compact" type="checkbox" class="sr-only peer"/>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:bg-blue-900 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS TAB -->
+      <div id="settings-tab-notifications" class="settings-tab hidden space-y-5">
+        <h4 class="font-headline font-bold text-base" style="color:#001453;">Notification Preferences</h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">High Risk Alerts</p>
+              <p class="text-xs text-slate-500 mt-0.5">Notify when any customer scores High</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="s-notif-high" type="checkbox" checked class="sr-only peer"/>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:bg-blue-900 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Medium Risk Alerts</p>
+              <p class="text-xs text-slate-500 mt-0.5">Notify when any customer scores Medium</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="s-notif-med" type="checkbox" checked class="sr-only peer"/>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:bg-blue-900 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Low Risk Alerts</p>
+              <p class="text-xs text-slate-500 mt-0.5">Notify for healthy profiles too</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="s-notif-low" type="checkbox" class="sr-only peer"/>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:bg-blue-900 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Bulk Upload Complete</p>
+              <p class="text-xs text-slate-500 mt-0.5">Show toast when bulk analysis finishes</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input id="s-notif-bulk" type="checkbox" checked class="sr-only peer"/>
+              <div class="w-11 h-6 bg-slate-200 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:bg-blue-900 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM TAB -->
+      <div id="settings-tab-system" class="settings-tab hidden space-y-5">
+        <h4 class="font-headline font-bold text-base" style="color:#001453;">System &amp; Data</h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">Backend API URL</p>
+              <p class="text-xs text-slate-500 mt-0.5">FastAPI server address</p>
+            </div>
+            <input id="s-api-url" type="text" value="http://127.0.0.1:8000" class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300 w-52"/>
+          </div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div>
+              <p class="font-semibold text-sm">API Status</p>
+              <p class="text-xs text-slate-500 mt-0.5">Check if backend is reachable</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span id="api-status-dot" class="w-3 h-3 rounded-full bg-slate-300"></span>
+              <span id="api-status-text" class="text-xs font-bold text-slate-500">Not checked</span>
+              <button id="check-api-btn" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white hover:opacity-90 transition-all" style="background:#001453;">Check</button>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl bg-red-50 border border-red-100 space-y-3">
+            <p class="font-semibold text-sm text-red-700">Danger Zone</p>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm text-red-600">Clear session data</p>
+                <p class="text-xs text-red-400 mt-0.5">Removes all analyses from this session</p>
+              </div>
+              <button id="clear-session-btn" class="px-4 py-2 rounded-lg text-sm font-bold border-2 border-red-400 text-red-600 hover:bg-red-100 transition-all">Clear Data</button>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <p class="text-xs text-slate-400 space-y-1">
+              <span class="block">🏦 <strong>Sovereign Analyst v1.0</strong></span>
+              <span class="block">AI Loan Risk &amp; Recovery System</span>
+              <span class="block">Built with FastAPI + Tailwind CSS</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- Footer -->
+    <div class="px-8 py-4 border-t border-slate-100 flex justify-between items-center bg-slate-50">
+      <button id="settings-reset-btn" class="text-sm text-slate-400 hover:text-slate-600 font-medium transition-colors">Reset to defaults</button>
+      <div class="flex gap-3">
+        <button id="close-settings-cancel" class="px-5 py-2 rounded-lg text-sm font-bold border border-slate-300 text-slate-600 hover:bg-slate-100 transition-all">Cancel</button>
+        <button id="save-settings-btn" class="px-5 py-2 rounded-lg text-sm font-bold text-white hover:opacity-90 transition-all" style="background:#001453;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT MODAL -->
+<div id="support-modal" class="hidden fixed inset-0 bg-black/40 z-[200] flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-headline font-bold text-xl" style="color:#001453;">Support Centre</h3>
+      <button id="close-support" class="text-slate-400 hover:text-slate-700 transition-colors"><span class="material-symbols-outlined">close</span></button>
+    </div>
+    <div class="space-y-3">
+      <a href="mailto:support@sovereignanalyst.com" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-2xl" style="color:#001453;">mail</span>
+        <div><p class="font-bold text-sm">Email Support</p><p class="text-xs text-slate-500">support@sovereignanalyst.com</p></div>
+      </a>
+      <div class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-2xl" style="color:#001453;">phone</span>
+        <div><p class="font-bold text-sm">Phone Support</p><p class="text-xs text-slate-500">+91 1800-XXX-XXXX (9 AM – 6 PM IST)</p></div>
+      </div>
+      <div class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-2xl" style="color:#001453;">help_center</span>
+        <div><p class="font-bold text-sm">Documentation</p><p class="text-xs text-slate-500">View user guide &amp; API docs</p></div>
+      </div>
+    </div>
+    <p class="text-xs text-slate-400 text-center mt-6">Sovereign Analyst v1.0 — AI Loan Risk &amp; Recovery System</p>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] items-center justify-center">
+  <div class="bg-white p-8 rounded-2xl flex flex-col items-center gap-4 shadow-2xl">
+    <div class="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin" style="border-color:#001453;border-top-color:transparent;"></div>
+    <p class="font-headline font-bold" style="color:#001453;">Neural Analysis In Progress...</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="hidden fixed top-6 right-6 z-[300] bg-white border border-slate-200 shadow-xl rounded-xl px-5 py-4 flex items-center gap-3 max-w-xs">
+  <span id="toast-icon" class="material-symbols-outlined" style="color:#16a34a;">check_circle</span>
+  <p id="toast-msg" class="text-sm font-semibold text-slate-700"></p>
+</div>
+
+<script>
+let API_URL = "https://ai-powered-autonomous-loan-recovery-risk.onrender.com";
+
+// ── App-wide settings state ────────────────────────────────────
+const appSettings = {
+  currency: "₹",
+  compactMode: false,
+  notifHigh: true,
+  notifMed: true,
+  notifLow: false,
+  notifBulk: true,
+  rowsPerPage: 50,
+};
+let selectedLanguage = "English";
+let riskEntries = [];
+let allScores = [], pHigh = 0, pMed = 0, pLow = 0;
+
+// ── Helpers ──────────────────────────────────────────────────
+function levelColor(l){ return l==="High"?"#ba1a1a":l==="Medium"?"#d97706":"#16a34a"; }
+function toast(msg,type="success"){
+  const t=document.getElementById("toast");
+  document.getElementById("toast-msg").textContent=msg;
+  const ic=document.getElementById("toast-icon");
+  ic.textContent=type==="success"?"check_circle":"error";
+  ic.style.color=type==="success"?"#16a34a":"#ba1a1a";
+  t.classList.remove("hidden"); t.classList.add("flex");
+  clearTimeout(t._t); t._t=setTimeout(()=>{t.classList.add("hidden");t.classList.remove("flex");},3000);
+}
+function showLoading(v){
+  const o=document.getElementById("loading-overlay");
+  o.classList.toggle("hidden",!v); o.classList.toggle("flex",v);
+}
+
+// ── Sidebar Nav ───────────────────────────────────────────────
+document.querySelectorAll(".nav-link").forEach(link=>{
+  link.addEventListener("click",()=>{
+    document.querySelectorAll(".nav-link").forEach(l=>{l.classList.remove("nav-active");l.classList.add("nav-inactive");});
+    link.classList.add("nav-active"); link.classList.remove("nav-inactive");
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    const p=document.getElementById("page-"+link.dataset.page);
+    if(p) p.classList.add("active");
+  });
+});
+
+// ── New Assessment Button ─────────────────────────────────────
+document.getElementById("new-assessment-btn").addEventListener("click",()=>{
+  ["income","expenses","emi","balance"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("missed_payments").value="0";
+  document.getElementById("income").focus();
+  toast("Form cleared — ready for new assessment.");
+});
+
+// ── Language Buttons ──────────────────────────────────────────
+document.querySelectorAll(".lang-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".lang-btn").forEach(b=>{b.style.background="#e2e8f0";b.style.color="#475569";});
+    btn.style.background="#001453"; btn.style.color="#fff";
+    selectedLanguage=btn.dataset.lang;
+  });
+});
+
+// ── Analyze Single ────────────────────────────────────────────
+document.getElementById("analyze-btn").addEventListener("click",async()=>{
+  const income=parseFloat(document.getElementById("income").value);
+  const expenses=parseFloat(document.getElementById("expenses").value);
+  const emi=parseFloat(document.getElementById("emi").value);
+  const balance=parseFloat(document.getElementById("balance").value);
+  const missed_payments=parseInt(document.getElementById("missed_payments").value);
+  if(!income||!expenses||!emi||!balance){toast("Please fill in all fields.","error");return;}
+  showLoading(true);
+  try{
+    const res=await fetch(`${API_URL}/analyze`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({income,expenses,emi,balance,missed_payments,language:selectedLanguage})});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    renderResults(data);
+    recordEntry({name:"Manual Entry",income,expenses,emi,balance,missed_payments},data);
+    toast("Analysis complete!");
+  }catch(err){toast("Cannot connect to backend. Is uvicorn running?","error");}
+  finally{showLoading(false);}
+});
+
+// ── Render Results ────────────────────────────────────────────
+function renderResults(data){
+  const c=levelColor(data.risk_level);
+  document.getElementById("risk-score").textContent=data.risk_score+"%";
+  document.getElementById("risk-score").style.color=c;
+  document.getElementById("risk-level-badge").textContent=data.risk_level+" Risk";
+  document.getElementById("risk-level-badge").style.color=c;
+  document.getElementById("risk-bar").style.width=data.risk_score+"%";
+  document.getElementById("risk-bar").style.background=c;
+  document.getElementById("risk-card").style.borderColor=c;
+  document.getElementById("sim-before").textContent=data.simulation.before+"%";
+  document.getElementById("sim-after").textContent=data.simulation.after+"%";
+  document.getElementById("reasons-list").innerHTML=data.reasons.length===0
+    ?`<li class="flex items-center gap-3 text-green-600 text-sm"><span class="material-symbols-outlined">check_circle</span><span class="font-semibold">No risk factors detected. Profile looks healthy.</span></li>`
+    :data.reasons.map(r=>`<li class="flex items-start gap-3"><div class="mt-0.5 w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-red-600 text-xs">warning</span></div><span class="text-sm">${r}</span></li>`).join("");
+  document.getElementById("action-text").textContent=`"${data.action}"`;
+  document.getElementById("recovery-message").textContent=data.message;
+  document.getElementById("message-time").textContent=new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+
+// ── Record Entry ──────────────────────────────────────────────
+function recordEntry(inputs,data){
+  const entry={...inputs,...data,time:new Date().toLocaleTimeString()};
+  riskEntries.unshift(entry);
+  allScores.push(data.risk_score);
+  if(data.risk_level==="High") pHigh++;
+  else if(data.risk_level==="Medium") pMed++;
+  else pLow++;
+  updateRiskTable(); updatePipeline(); updatePortfolio(); updateReportPage();
+  if(typeof pushNotif==="function") pushNotif(`${inputs.name||"Customer"} assessed — ${data.risk_level} risk (${data.risk_score}%). Action: ${data.action}.`, data.risk_level);
+}
+
+function updateRiskTable(){
+  document.getElementById("risk-table-body").innerHTML=riskEntries.map((e,i)=>{
+    const c=levelColor(e.risk_level);
+    return`<tr class="border-b border-slate-50 hover:bg-slate-50">
+      <td class="py-3 px-4 font-mono text-slate-400 text-xs">#${String(riskEntries.length-i).padStart(4,"0")}</td>
+      <td class="py-3 px-4 font-semibold">${e.name||"—"}</td>
+      <td class="py-3 px-4">${appSettings.currency}${Number(e.income).toLocaleString()}</td>
+      <td class="py-3 px-4">${appSettings.currency}${Number(e.expenses).toLocaleString()}</td>
+      <td class="py-3 px-4">${appSettings.currency}${Number(e.emi).toLocaleString()}</td>
+      <td class="py-3 px-4">${appSettings.currency}${Number(e.balance).toLocaleString()}</td>
+      <td class="py-3 px-4">${e.missed_payments}</td>
+      <td class="py-3 px-4 font-bold" style="color:${c}">${e.risk_score}%</td>
+      <td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs font-bold text-white" style="background:${c}">${e.risk_level}</span></td>
+      <td class="py-3 px-4 text-xs text-slate-600">${e.action}</td>
+      <td class="py-3 px-4 text-xs text-slate-400">${e.time}</td>
+    </tr>`;
+  }).join("")||`<tr><td colspan="11" class="py-10 text-center text-slate-400 text-sm">No analyses yet.</td></tr>`;
+}
+
+function updatePipeline(){
+  document.getElementById("pipeline-high").textContent=pHigh;
+  document.getElementById("pipeline-medium").textContent=pMed;
+  document.getElementById("pipeline-low").textContent=pLow;
+  document.getElementById("pipeline-actions").innerHTML=riskEntries.map(e=>{
+    const c=levelColor(e.risk_level);
+    return`<div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 flex-wrap gap-2 text-sm">
+      <span class="font-semibold text-slate-700">${e.name||"Entry"} — ${e.action}</span>
+      <span class="px-2 py-1 rounded-full text-xs font-bold text-white" style="background:${c}">${e.risk_level}</span>
+      <span class="text-xs text-slate-400">${e.time}</span>
+    </div>`;
+  }).join("")||`<p class="text-slate-400 text-sm">No actions yet.</p>`;
+}
+
+function updatePortfolio(){
+  const total=allScores.length;
+  const avg=total?Math.round(allScores.reduce((a,b)=>a+b,0)/total):0;
+  document.getElementById("port-total").textContent=total;
+  document.getElementById("port-avg").textContent=avg+"%";
+  document.getElementById("port-high").textContent=pHigh;
+  document.getElementById("port-low").textContent=riskEntries.filter(e=>e.risk_level==="Low").length;
+  if(total>0){
+    const h=(pHigh/total*100).toFixed(1), m=(pMed/total*100).toFixed(1), l=(pLow/total*100).toFixed(1);
+    document.getElementById("dist-high").style.width=h+"%";
+    document.getElementById("dist-med").style.width=m+"%";
+    document.getElementById("dist-low").style.width=l+"%";
+    document.getElementById("pct-high").textContent=h+"%";
+    document.getElementById("pct-med").textContent=m+"%";
+    document.getElementById("pct-low").textContent=l+"%";
+  }
+}
+
+function updateReportPage(){
+  const total=allScores.length; if(!total) return;
+  const avg=Math.round(allScores.reduce((a,b)=>a+b,0)/total);
+  document.getElementById("report-summary").innerHTML=`
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-50 p-4 rounded-lg text-center"><p class="text-xs text-slate-500 font-bold uppercase">Total</p><p class="text-2xl font-black" style="color:#001453">${total}</p></div>
+      <div class="bg-slate-50 p-4 rounded-lg text-center"><p class="text-xs text-slate-500 font-bold uppercase">Avg Score</p><p class="text-2xl font-black" style="color:#001453">${avg}%</p></div>
+      <div class="bg-slate-50 p-4 rounded-lg text-center"><p class="text-xs font-bold uppercase text-red-600">High Risk</p><p class="text-2xl font-black text-red-600">${pHigh}</p></div>
+      <div class="bg-slate-50 p-4 rounded-lg text-center"><p class="text-xs font-bold uppercase text-green-600">Low Risk</p><p class="text-2xl font-black text-green-600">${pLow}</p></div>
+    </div>`;
+  document.getElementById("report-table-body").innerHTML=riskEntries.map(e=>{
+    const c=levelColor(e.risk_level);
+    return`<tr class="border-b border-slate-50 hover:bg-slate-50">
+      <td class="py-3 px-4 font-semibold text-sm">${e.name||"Manual Entry"}</td>
+      <td class="py-3 px-4 text-sm">${appSettings.currency}${Number(e.income).toLocaleString()}</td>
+      <td class="py-3 px-4 text-sm">${appSettings.currency}${Number(e.emi).toLocaleString()}</td>
+      <td class="py-3 px-4 font-bold text-sm" style="color:${c}">${e.risk_score}%</td>
+      <td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs font-bold text-white" style="background:${c}">${e.risk_level}</span></td>
+      <td class="py-3 px-4 text-xs text-slate-600">${e.action}</td>
+      <td class="py-3 px-4 text-xs text-slate-500">${e.simulation?.after??0}%</td>
+    </tr>`;
+  }).join("");
+}
+
+// ── Message Actions ───────────────────────────────────────────
+document.getElementById("copy-msg-btn").addEventListener("click",()=>{
+  navigator.clipboard.writeText(document.getElementById("recovery-message").textContent).then(()=>toast("Message copied!"));
+});
+document.getElementById("whatsapp-btn").addEventListener("click",()=>{
+  const msg=encodeURIComponent(document.getElementById("recovery-message").textContent);
+  window.open(`https://wa.me/?text=${msg}`,"_blank");
+});
+
+// ── FAB / Support Modal ───────────────────────────────────────
+function openSupport(){ document.getElementById("support-modal").classList.remove("hidden"); }
+function closeSupport(){ document.getElementById("support-modal").classList.add("hidden"); }
+document.getElementById("fab-btn").addEventListener("click",openSupport);
+document.getElementById("support-sidebar-btn").addEventListener("click",openSupport);
+document.getElementById("close-support").addEventListener("click",closeSupport);
+document.getElementById("support-modal").addEventListener("click",e=>{ if(e.target===e.currentTarget) closeSupport(); });
+
+// ── Export Excel ──────────────────────────────────────────────
+function exportExcel(data,filename){
+  if(!data.length){toast("No data to export yet.","error");return;}
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Risk Report");
+  XLSX.writeFile(wb,filename);
+  toast("Excel downloaded!");
+}
+function getExportRows(){
+  return riskEntries.map((e,i)=>({
+    "ID":`#${String(riskEntries.length-i).padStart(4,"0")}`,
+    "Name":e.name||"Manual Entry",
+    "Income":e.income,"Expenses":e.expenses,"EMI":e.emi,"Balance":e.balance,
+    "Missed Payments":e.missed_payments,"Risk Score (%)":e.risk_score,
+    "Risk Level":e.risk_level,"Action":e.action,
+    "Simulation After (%)":e.simulation?.after??0,"Message":e.message,"Time":e.time
+  }));
+}
+document.getElementById("export-excel-btn").addEventListener("click",()=>exportExcel(getExportRows(),"loan_risk_report.xlsx"));
+document.getElementById("export-log-btn").addEventListener("click",()=>exportExcel(getExportRows(),"risk_analysis_log.xlsx"));
+
+// ── Export PDF ────────────────────────────────────────────────
+function exportPDF(){ if(!riskEntries.length){toast("No data to export.","error");return;} window.print(); }
+document.getElementById("export-pdf-btn").addEventListener("click",exportPDF);
+document.getElementById("export-single-pdf-btn").addEventListener("click",exportPDF);
+
+// ── Export JSON ───────────────────────────────────────────────
+document.getElementById("export-json-btn").addEventListener("click",()=>{
+  if(!riskEntries.length){toast("No data yet.","error");return;}
+  const total=allScores.length, avg=Math.round(allScores.reduce((a,b)=>a+b,0)/total);
+  const blob=new Blob([JSON.stringify({generated:new Date().toISOString(),totalAnalyses:total,averageRiskScore:avg,breakdown:{high:pHigh,medium:pMed,low:pLow},entries:riskEntries},null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="loan_risk_report.json"; a.click();
+  toast("JSON exported!");
+});
+
+// ── Bulk Upload ───────────────────────────────────────────────
+document.getElementById("download-template-btn").addEventListener("click",()=>{
+  exportExcel([
+    {name:"John Doe",income:50000,expenses:30000,emi:10000,balance:25000,missed_payments:0,language:"English"},
+    {name:"Jane Smith",income:40000,expenses:42000,emi:18000,balance:5000,missed_payments:2,language:"Tamil"},
+    {name:"Ravi Kumar",income:60000,expenses:25000,emi:28000,balance:8000,missed_payments:3,language:"Hindi"}
+  ],"loan_risk_template.xlsx");
+});
+
+const dropZone=document.getElementById("drop-zone");
+dropZone.addEventListener("dragover",e=>{e.preventDefault();dropZone.classList.add("dragover");});
+dropZone.addEventListener("dragleave",()=>dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop",e=>{e.preventDefault();dropZone.classList.remove("dragover");handleFile(e.dataTransfer.files[0]);});
+document.getElementById("csv-file-input").addEventListener("change",e=>handleFile(e.target.files[0]));
+
+function handleFile(file){
+  if(!file) return;
+  document.getElementById("file-name-display").textContent=file.name;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let rows=[];
+    try{ const wb=XLSX.read(e.target.result,{type:"binary"}); rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); }
+    catch{ toast("Could not parse file. Use the template.","error"); return; }
+    if(!rows.length){toast("File is empty.","error");return;}
+    processBulk(rows);
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function processBulk(rows){
+  const valid=rows.filter(r=>r.income&&r.expenses&&r.emi&&r.balance);
+  if(!valid.length){toast("No valid rows. Check column names.","error");return;}
+  document.getElementById("bulk-progress").classList.remove("hidden");
+  document.getElementById("bulk-results-wrapper").classList.add("hidden");
+  document.getElementById("bulk-spinner").classList.remove("hidden");
+  const results=[];
+  for(let i=0;i<valid.length;i++){
+    const row=valid[i];
+    document.getElementById("bulk-progress-text").textContent=`Processing ${i+1} / ${valid.length} customers...`;
+    document.getElementById("bulk-progress-bar").style.width=Math.round(i/valid.length*100)+"%";
+    try{
+      const res=await fetch(`${API_URL}/analyze`,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({income:Number(row.income),expenses:Number(row.expenses),emi:Number(row.emi),
+          balance:Number(row.balance),missed_payments:Number(row.missed_payments)||0,language:row.language||"English"})});
+      const data=await res.json();
+      results.push({...row,...data});
+      recordEntry(row,data);
+    }catch{ results.push({...row,error:"API error"}); }
+    await new Promise(r=>setTimeout(r,100));
+  }
+  document.getElementById("bulk-progress-bar").style.width="100%";
+  document.getElementById("bulk-progress-text").textContent=`✓ Done — ${valid.length} customers analyzed.`;
+  document.getElementById("bulk-spinner").classList.add("hidden");
+  renderBulkResults(results);
+}
+
+function renderBulkResults(results){
+  document.getElementById("bulk-results-wrapper").classList.remove("hidden");
+  const h=results.filter(r=>r.risk_level==="High").length;
+  const m=results.filter(r=>r.risk_level==="Medium").length;
+  const l=results.filter(r=>r.risk_level==="Low").length;
+  const avg=results.length?Math.round(results.reduce((s,r)=>s+(r.risk_score||0),0)/results.length):0;
+  document.getElementById("bulk-summary").innerHTML=`
+    <div class="p-3 bg-white rounded-lg text-center"><p class="text-xs text-slate-500 font-bold uppercase">Total</p><p class="text-2xl font-black" style="color:#001453">${results.length}</p></div>
+    <div class="p-3 bg-white rounded-lg text-center"><p class="text-xs text-slate-500 font-bold uppercase">Avg Score</p><p class="text-2xl font-black" style="color:#001453">${avg}%</p></div>
+    <div class="p-3 bg-white rounded-lg text-center"><p class="text-xs font-bold uppercase text-red-600">High Risk</p><p class="text-2xl font-black text-red-600">${h}</p></div>
+    <div class="p-3 bg-white rounded-lg text-center"><p class="text-xs font-bold uppercase text-green-600">Low Risk</p><p class="text-2xl font-black text-green-600">${l}</p></div>`;
+
+  // State for sort/filter
+  let bulkData = [...results];
+  let sortCol = "risk_score", sortDir = "desc", filterLevel = "all", searchTerm = "";
+
+  const riskOrder = { High:3, Medium:2, Low:1 };
+
+  function getFiltered(){
+    return bulkData
+      .filter(r => filterLevel==="all" || r.risk_level===filterLevel)
+      .filter(r => !searchTerm || (r.name||"").toLowerCase().includes(searchTerm.toLowerCase()))
+      .sort((a,b)=>{
+        let va=a[sortCol], vb=b[sortCol];
+        if(sortCol==="risk_level"){ va=riskOrder[va]||0; vb=riskOrder[vb]||0; }
+        else if(sortCol==="name"){ va=(va||"").toLowerCase(); vb=(vb||"").toLowerCase(); }
+        else { va=Number(va)||0; vb=Number(vb)||0; }
+        if(va<vb) return sortDir==="asc"?-1:1;
+        if(va>vb) return sortDir==="asc"?1:-1;
+        return 0;
+      });
+  }
+
+  function renderTable(){
+    const rows = getFiltered();
+    document.getElementById("bulk-result-count").textContent = `Showing ${rows.length} of ${results.length} customers`;
+    document.getElementById("bulk-table-body").innerHTML = rows.length===0
+      ? `<tr><td colspan="10" class="py-10 text-center text-slate-400 text-sm">No customers match the current filter.</td></tr>`
+      : rows.map((r,i)=>{
+          const c=levelColor(r.risk_level||"Low");
+          return`<tr class="border-b border-slate-50 hover:bg-slate-50 transition-all">
+            <td class="py-3 px-4 text-slate-400 font-mono text-xs">${i+1}</td>
+            <td class="py-3 px-4 font-semibold">${r.name||"—"}</td>
+            <td class="py-3 px-4">${appSettings.currency}${Number(r.income).toLocaleString()}</td>
+            <td class="py-3 px-4">${appSettings.currency}${Number(r.expenses).toLocaleString()}</td>
+            <td class="py-3 px-4">${appSettings.currency}${Number(r.emi).toLocaleString()}</td>
+            <td class="py-3 px-4">${appSettings.currency}${Number(r.balance).toLocaleString()}</td>
+            <td class="py-3 px-4">${r.missed_payments}</td>
+            <td class="py-3 px-4 font-bold" style="color:${c}">${r.risk_score??0}%</td>
+            <td class="py-3 px-4"><span class="px-2 py-1 rounded-full text-xs font-bold text-white" style="background:${c}">${r.risk_level||"—"}</span></td>
+            <td class="py-3 px-4 text-xs text-slate-600">${r.action||r.error||"—"}</td>
+          </tr>`;
+        }).join("");
+
+    // Update sort icons
+    document.querySelectorAll(".bulk-sort-th").forEach(th=>{
+      const icon = th.querySelector(".sort-icon");
+      if(th.dataset.col===sortCol){
+        icon.textContent = sortDir==="asc"?"↑":"↓";
+        icon.style.color="#001453";
+        th.style.color="#001453";
+      } else {
+        icon.textContent="↕"; icon.style.color="#cbd5e1"; th.style.color="";
+      }
+    });
+  }
+
+  // Sort on column header click
+  document.querySelectorAll(".bulk-sort-th").forEach(th=>{
+    th.onclick=()=>{
+      if(sortCol===th.dataset.col){ sortDir=sortDir==="asc"?"desc":"asc"; }
+      else { sortCol=th.dataset.col; sortDir=sortCol==="name"?"asc":"desc"; }
+      renderTable();
+    };
+  });
+
+  // Filter tabs
+  document.querySelectorAll(".bulk-filter-btn").forEach(btn=>{
+    btn.onclick=()=>{
+      filterLevel=btn.dataset.filter;
+      document.querySelectorAll(".bulk-filter-btn").forEach(b=>{
+        b.style.background=""; b.style.color="";
+        b.classList.remove("text-white");
+        b.classList.add("bg-white","text-slate-600");
+      });
+      btn.style.background="#001453"; btn.style.color="#fff";
+      btn.classList.remove("bg-white","text-slate-600");
+      renderTable();
+    };
+  });
+
+  // Search
+  document.getElementById("bulk-search").oninput=e=>{
+    searchTerm=e.target.value; renderTable();
+  };
+
+  document.getElementById("export-bulk-excel-btn").onclick=()=>exportExcel(getFiltered().map(r=>({
+    Name:r.name,Income:r.income,Expenses:r.expenses,EMI:r.emi,Balance:r.balance,
+    "Missed Payments":r.missed_payments,"Risk Score (%)":r.risk_score,"Risk Level":r.risk_level,
+    Action:r.action,"Sim After (%)":r.simulation?.after??0
+  })),"bulk_risk_results.xlsx");
+  document.getElementById("export-bulk-pdf-btn").onclick=exportPDF;
+
+  renderTable();
+  if(appSettings.notifBulk) toast(`Bulk complete! ${results.length} customers analyzed.`);
+}
+
+// ── NOTIFICATIONS ─────────────────────────────────────────────
+const notifBtn   = document.getElementById("notif-btn");
+const notifPanel = document.getElementById("notif-panel");
+const notifBadge = document.getElementById("notif-badge");
+const notifList  = document.getElementById("notif-list");
+let notifications = [];
+let unread = 0;
+
+function pushNotif(msg, level){
+  // respect notification preferences
+  if(level==="High"   && !appSettings.notifHigh) return;
+  if(level==="Medium" && !appSettings.notifMed)  return;
+  if(level==="Low"    && !appSettings.notifLow)  return;
+  const c = levelColor(level);
+  const icon = level==="High"?"warning":level==="Medium"?"info":"check_circle";
+  const time = new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+  notifications.unshift({msg, level, c, icon, time, read:false});
+  unread++;
+  notifBadge.textContent = unread;
+  notifBadge.classList.remove("hidden");
+  notifBadge.classList.add("flex");
+  renderNotifList();
+}
+
+function renderNotifList(){
+  if(!notifications.length){
+    notifList.innerHTML=`<p class="text-slate-400 text-sm text-center py-6">No notifications yet.</p>`;
+    return;
+  }
+  notifList.innerHTML = notifications.map((n,i)=>`
+    <div class="flex items-start gap-3 p-3 rounded-lg ${n.read?'':'bg-blue-50 border border-blue-100'} hover:bg-slate-50 transition-all cursor-pointer" onclick="markRead(${i})">
+      <span class="material-symbols-outlined text-sm mt-0.5" style="color:${n.c}">${n.icon}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm text-slate-700 leading-snug">${n.msg}</p>
+        <p class="text-xs text-slate-400 mt-0.5">${n.time}</p>
+      </div>
+      ${!n.read?`<span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5"></span>`:''}
+    </div>`).join("");
+}
+
+function markRead(i){
+  if(!notifications[i].read){ notifications[i].read=true; unread=Math.max(0,unread-1); }
+  notifBadge.textContent=unread;
+  if(unread===0){ notifBadge.classList.add("hidden"); notifBadge.classList.remove("flex"); }
+  renderNotifList();
+}
+
+notifBtn.addEventListener("click", e=>{
+  e.stopPropagation();
+  closeAllPanels(notifPanel);
+  notifPanel.classList.toggle("hidden");
+  renderNotifList();
+});
+document.getElementById("mark-all-read-btn").addEventListener("click",()=>{
+  notifications.forEach(n=>n.read=true); unread=0;
+  notifBadge.classList.add("hidden"); notifBadge.classList.remove("flex");
+  renderNotifList();
+});
+document.getElementById("clear-notifs-btn").addEventListener("click",()=>{
+  notifications=[]; unread=0;
+  notifBadge.classList.add("hidden"); notifBadge.classList.remove("flex");
+  renderNotifList();
+});
+
+// ── HISTORY PANEL ─────────────────────────────────────────────
+const historyBtn   = document.getElementById("history-btn");
+const historyPanel = document.getElementById("history-panel");
+const historyList  = document.getElementById("history-list");
+
+function renderHistoryList(){
+  if(!riskEntries.length){
+    historyList.innerHTML=`<p class="text-slate-400 text-sm text-center py-6">No analyses yet.</p>`;
+    return;
+  }
+  historyList.innerHTML = riskEntries.slice(0,20).map((e,i)=>{
+    const c=levelColor(e.risk_level);
+    return`<div class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-all cursor-pointer border-b border-slate-50">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0" style="background:${c}">${e.risk_score}%</div>
+        <div>
+          <p class="text-sm font-semibold text-slate-700">${e.name||"Manual Entry"}</p>
+          <p class="text-xs text-slate-400">${e.time} · ${appSettings.currency}${Number(e.income).toLocaleString()} income</p>
+        </div>
+      </div>
+      <span class="text-xs px-2 py-1 rounded-full text-white font-bold flex-shrink-0" style="background:${c}">${e.risk_level}</span>
+    </div>`;
+  }).join("");
+}
+
+historyBtn.addEventListener("click", e=>{
+  e.stopPropagation();
+  closeAllPanels(historyPanel);
+  historyPanel.classList.toggle("hidden");
+  renderHistoryList();
+});
+
+// ── ACCOUNT DROPDOWN ──────────────────────────────────────────
+const accountBtn    = document.getElementById("account-btn");
+const accountPanel  = document.getElementById("account-panel");
+
+accountBtn.addEventListener("click", e=>{
+  e.stopPropagation();
+  closeAllPanels(accountPanel);
+  accountPanel.classList.toggle("hidden");
+});
+document.getElementById("acc-logout-btn").addEventListener("click",()=>{
+  if(confirm("Are you sure you want to sign out?")){
+    closeAllPanels();
+    toast("Signed out successfully.");
+  }
+});
+document.getElementById("acc-export-btn").addEventListener("click",()=>{
+  closeAllPanels();
+  exportExcel(getExportRows(),"my_session_export.xlsx");
+});
+
+// ── CLOSE ALL PANELS ON OUTSIDE CLICK ─────────────────────────
+function closeAllPanels(except){
+  [notifPanel, historyPanel, accountPanel].forEach(p=>{ if(p!==except) p.classList.add("hidden"); });
+}
+document.addEventListener("click", ()=>closeAllPanels());
+[notifPanel, historyPanel, accountPanel].forEach(p=>p.addEventListener("click",e=>e.stopPropagation()));
+
+// ── SETTINGS MODAL ────────────────────────────────────────────
+function openSettings(){ document.getElementById("settings-modal").classList.remove("hidden"); closeAllPanels(); }
+function closeSettings(){ document.getElementById("settings-modal").classList.add("hidden"); }
+
+document.getElementById("settings-sidebar-btn").addEventListener("click", openSettings);
+document.getElementById("settings-account-btn").addEventListener("click", openSettings);
+document.getElementById("close-settings").addEventListener("click", closeSettings);
+document.getElementById("close-settings-cancel").addEventListener("click", closeSettings);
+document.getElementById("settings-modal").addEventListener("click", e=>{ if(e.target===e.currentTarget) closeSettings(); });
+
+// Settings tabs
+document.querySelectorAll(".settings-tab-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".settings-tab-btn").forEach(b=>{
+      b.classList.remove("border-blue-900"); b.style.color="";
+      b.classList.add("text-slate-500","border-transparent");
+    });
+    btn.classList.add("border-blue-900"); btn.style.color="#001453";
+    btn.classList.remove("text-slate-500","border-transparent");
+    document.querySelectorAll(".settings-tab").forEach(t=>t.classList.add("hidden"));
+    document.getElementById("settings-tab-"+btn.dataset.tab).classList.remove("hidden");
+  });
+});
+
+// Check API status
+document.getElementById("check-api-btn").addEventListener("click", async ()=>{
+  const dot  = document.getElementById("api-status-dot");
+  const text = document.getElementById("api-status-text");
+  const url  = document.getElementById("s-api-url").value.trim();
+  dot.style.background="#f59e0b"; text.textContent="Checking..."; text.style.color="#d97706";
+  try{
+    const res = await fetch(`${url}/docs`, {signal: AbortSignal.timeout(3000)});
+    if(res.ok){ dot.style.background="#16a34a"; text.textContent="Online ✓"; text.style.color="#16a34a"; }
+    else throw new Error();
+  }catch{
+    dot.style.background="#ba1a1a"; text.textContent="Offline ✗"; text.style.color="#ba1a1a";
+  }
+});
+
+// Clear session data
+document.getElementById("clear-session-btn").addEventListener("click",()=>{
+  if(!confirm("Clear all session data? This cannot be undone.")) return;
+  riskEntries=[]; allScores=[]; pHigh=0; pMed=0; pLow=0; notifications=[]; unread=0;
+  notifBadge.classList.add("hidden"); notifBadge.classList.remove("flex");
+  updateRiskTable(); updatePipeline(); updatePortfolio(); updateReportPage();
+  closeSettings();
+  toast("Session data cleared.");
+});
+
+// Reset to defaults
+document.getElementById("settings-reset-btn").addEventListener("click",()=>{
+  document.getElementById("s-name").value      = "Sovereign Analyst";
+  document.getElementById("s-role").value      = "Portfolio Manager";
+  document.getElementById("s-email").value     = "sa@sovereignbank.com";
+  document.getElementById("s-branch").value    = "Risk Management — HQ";
+  document.getElementById("s-bank").value      = "Sovereign National Bank";
+  document.getElementById("s-currency").value  = "₹";
+  document.getElementById("s-lang").value      = "English";
+  document.getElementById("s-rows").value      = "50";
+  document.getElementById("s-compact").checked = false;
+  document.getElementById("s-notif-high").checked = true;
+  document.getElementById("s-notif-med").checked  = true;
+  document.getElementById("s-notif-low").checked  = false;
+  document.getElementById("s-notif-bulk").checked = true;
+  document.getElementById("s-api-url").value   = "http://127.0.0.1:8000";
+  toast("Defaults restored — click Save to apply.");
+});
+
+// Save settings — applies ALL options immediately
+document.getElementById("save-settings-btn").addEventListener("click",()=>{
+
+  // ── 1. Profile: update sidebar display ──
+  const name   = document.getElementById("s-name").value.trim()   || "Sovereign Analyst";
+  const role   = document.getElementById("s-role").value.trim()   || "Portfolio Manager";
+  const bank   = document.getElementById("s-bank").value.trim()   || "Sovereign National Bank";
+  document.querySelector("aside .font-bold.text-sm").textContent  = name;
+  document.querySelector("aside .text-xs.text-slate-500").textContent = role;
+  document.querySelector("aside .font-extrabold").textContent     = bank;
+  // Update account panel
+  document.querySelector("#account-panel .font-bold.text-white").textContent  = name;
+  document.querySelector("#account-panel .text-blue-300").textContent         = role;
+  document.querySelector("#account-panel .text-blue-200").textContent         = document.getElementById("s-email").value.trim();
+
+  // ── 2. Currency: update all ₹ symbols in the page ──
+  const newCurrency = document.getElementById("s-currency").value;
+  if(newCurrency !== appSettings.currency){
+    document.querySelectorAll(".currency-sym").forEach(el=>el.textContent=newCurrency);
+    // update the income field prefix
+    const incPrefix = document.querySelector("#income").closest(".relative").querySelector("span");
+    if(incPrefix) incPrefix.textContent = newCurrency;
+    appSettings.currency = newCurrency;
+  }
+
+  // ── 3. Default language ──
+  const lang = document.getElementById("s-lang").value;
+  selectedLanguage = lang;
+  document.querySelectorAll(".lang-btn").forEach(b=>{
+    b.style.background = b.dataset.lang===lang ? "#001453" : "#e2e8f0";
+    b.style.color      = b.dataset.lang===lang ? "#fff"    : "#475569";
+  });
+
+  // ── 4. Compact mode ──
+  const compact = document.getElementById("s-compact").checked;
+  appSettings.compactMode = compact;
+  const py = compact ? "0.3rem" : "";
+  document.querySelectorAll("tbody tr td").forEach(td=>{
+    td.style.paddingTop = py; td.style.paddingBottom = py;
+  });
+  // add a live style rule so future rows also apply compact
+  let compactStyle = document.getElementById("compact-style");
+  if(!compactStyle){ compactStyle=document.createElement("style"); compactStyle.id="compact-style"; document.head.appendChild(compactStyle); }
+  compactStyle.textContent = compact ? "tbody tr td { padding-top:0.3rem!important; padding-bottom:0.3rem!important; }" : "";
+
+  // ── 5. Notification toggles ──
+  appSettings.notifHigh = document.getElementById("s-notif-high").checked;
+  appSettings.notifMed  = document.getElementById("s-notif-med").checked;
+  appSettings.notifLow  = document.getElementById("s-notif-low").checked;
+  appSettings.notifBulk = document.getElementById("s-notif-bulk").checked;
+
+  // ── 6. Rows per page ──
+  appSettings.rowsPerPage = document.getElementById("s-rows").value;
+
+  // ── 7. API URL ──
+  const newUrl = document.getElementById("s-api-url").value.trim();
+  if(newUrl) API_URL = newUrl;
+
+  // ── 8. Page title ──
+  document.title = bank + " — Loan Risk System";
+
+  closeSettings();
+  toast("Settings saved and applied!");
+});
+</script>
+</body>
+</html>
